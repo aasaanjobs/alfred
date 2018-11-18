@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	c "github.com/aasaanjobs/aj-alfred-ci/controllers"
+	c "github.com/aasaanjobs/alfred/controllers"
 	"github.com/gorilla/mux"
 )
 

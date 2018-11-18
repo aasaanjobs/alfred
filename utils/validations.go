@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/aasaanjobs/aj-alfred-ci/constants"
+	"github.com/aasaanjobs/alfred/constants"
 )
 
 // CommitHasDeployCmd checks whether the user has specified the

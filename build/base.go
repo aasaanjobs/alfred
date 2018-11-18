@@ -3,22 +3,30 @@ package build
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/aasaanjobs/aj-alfred-ci/utils"
+	"github.com/aasaanjobs/alfred/utils"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-type BuildResponse struct {
-	Deployment *appsv1.Deployment
-	Images     []string
-	feature    string
+// Response represents the build context and result
+type Response struct {
+	Deployment  *appsv1.Deployment
+	Images      []string
+	feature     string
+	projectName string
+}
+
+// NewDeploymentName returns the Kubernetes workload name to assigned for the build
+func (b *Response) NewDeploymentName() string {
+	return fmt.Sprintf("%s-%s", b.projectName, strings.ToLower(utils.GetJiraID(b.feature)))
 }
 
 // Build pulls the repository locally and builds the source using Dockerfile/s provided
-func Build(repo utils.Repository, branch string, logger *logrus.Entry) (*BuildResponse, error) {
+func Build(repo utils.Repository, branch string, logger *logrus.Entry) (*Response, error) {
 	logger.Infof("Running build sequence")
 	featureName := utils.GetFeatureName(branch)
 	var workDir = "/tmp"
@@ -27,17 +35,18 @@ func Build(repo utils.Repository, branch string, logger *logrus.Entry) (*BuildRe
 	if _, err := clone(repo.CloneURL, targetDir, branch, logger); err != nil {
 		return nil, err
 	}
-	// deployment, err := retrieveDeployment(targetDir)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	deployment, err := retrieveDeployment(targetDir, logger)
+	if err != nil {
+		return nil, err
+	}
 	dockerImages, err := RunDocker(targetDir, featureName, repo.Name, logger)
 	if err != nil {
 		return nil, err
 	}
-	return &BuildResponse{
-		// Deployment: deployment,
-		feature: featureName,
-		Images:  dockerImages,
+	return &Response{
+		Deployment:  deployment,
+		feature:     featureName,
+		projectName: repo.Name,
+		Images:      dockerImages,
 	}, nil
 }

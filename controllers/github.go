@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/aasaanjobs/aj-alfred-ci/build"
+	k "github.com/aasaanjobs/alfred/kubernetes"
+	apiv1 "k8s.io/api/core/v1"
+
+	"github.com/aasaanjobs/alfred/build"
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
-	"github.com/aasaanjobs/aj-alfred-ci/utils"
+	"github.com/aasaanjobs/alfred/utils"
 )
 
 var printer *logrus.Logger
@@ -30,6 +33,12 @@ func BuildAndDeploy(response utils.WebHookPayload, logger *logrus.Entry) {
 	} else {
 		logger.Infof("Build Successful, %q", buildResponse.Deployment)
 	}
+	deploymentsClient := k.GetK8SClient().AppsV1().Deployments(apiv1.NamespaceDefault)
+	if _, err := deploymentsClient.Create(k.ModifyDeployment(buildResponse)); err != nil {
+		logger.Errorf("Deployment failed, reason: %s", err.Error())
+	} else {
+		logger.Infof("Deployment Successful")
+	}
 }
 
 // WebHook is the controller to handle github push webhooks
@@ -42,9 +51,9 @@ func WebHook(w http.ResponseWriter, r *http.Request) error {
 	log := printer.WithFields(logrus.Fields{
 		"project":   response.Repository.Name,
 		"ref":       response.Ref,
-		"committer": response.Commits[0].Committer.Name,
+		"committer": response.Commits[0].Committer.Email,
 	})
-	log.Info("Received request")
+	log.Info("Received build and deploy request...")
 	go BuildAndDeploy(response, log)
 	return nil
 }

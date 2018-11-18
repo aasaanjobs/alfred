@@ -16,9 +16,11 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func retrieveDeployment(targetDir string) (*appsv1.Deployment, error) {
+func retrieveDeployment(targetDir string, log *logrus.Entry) (*appsv1.Deployment, error) {
+	log.Info("Reading deployment.json")
 	jsonFile, err := os.Open(path.Join(targetDir, "deployment.json"))
 	if err != nil {
+		log.Errorf("Failed to read deployment.json, reason: %s", err.Error())
 		return nil, err
 	}
 	defer jsonFile.Close()
