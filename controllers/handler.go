@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"runtime/debug"
 )
 
 // Error represents a handler error. It provides methods for a HTTP status
@@ -34,6 +35,14 @@ type ViewHandler func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP allows our Handler type to satisfy http.Handler.
 func (h ViewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("**ERROR** Recovered from %s", r)
+			debug.PrintStack()
+			http.Error(w, http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError)
+		}
+	}()
 	err := h(w, r)
 	if err != nil {
 		switch e := err.(type) {

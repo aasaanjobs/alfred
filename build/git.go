@@ -14,6 +14,7 @@ import (
 
 	"gopkg.in/src-d/go-git.v4"
 	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 func retrieveDeployment(targetDir string, log *logrus.Entry) (*appsv1.Deployment, error) {
@@ -28,6 +29,20 @@ func retrieveDeployment(targetDir string, log *logrus.Entry) (*appsv1.Deployment
 	var deployment *appsv1.Deployment
 	json.Unmarshal([]byte(byteValue), &deployment)
 	return deployment, nil
+}
+
+func retrieveService(targetDir string, log *logrus.Entry) (*apiv1.Service, error) {
+	log.Info("Reading service.json")
+	jsonFile, err := os.Open(path.Join(targetDir, "service.json"))
+	if err != nil {
+		log.Errorf("Failed to read service.json, reason: %s", err.Error())
+		return nil, err
+	}
+	defer jsonFile.Close()
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	var service *apiv1.Service
+	json.Unmarshal([]byte(byteValue), &service)
+	return service, nil
 }
 
 func clone(url, targetDir, branch string, logger *logrus.Entry) (*git.Repository, error) {

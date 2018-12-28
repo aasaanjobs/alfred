@@ -10,19 +10,21 @@ import (
 
 	"github.com/aasaanjobs/alfred/utils"
 	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 // Response represents the build context and result
 type Response struct {
 	Deployment  *appsv1.Deployment
+	Service     *apiv1.Service
 	Images      []string
-	feature     string
-	projectName string
+	Feature     string
+	ProjectName string
 }
 
 // NewDeploymentName returns the Kubernetes workload name to assigned for the build
 func (b *Response) NewDeploymentName() string {
-	return fmt.Sprintf("%s-%s", b.projectName, strings.ToLower(utils.GetJiraID(b.feature)))
+	return fmt.Sprintf("%s-%s", b.ProjectName, strings.ToLower(utils.GetJiraID(b.Feature)))
 }
 
 // Build pulls the repository locally and builds the source using Dockerfile/s provided
@@ -39,14 +41,19 @@ func Build(repo utils.Repository, branch string, logger *logrus.Entry) (*Respons
 	if err != nil {
 		return nil, err
 	}
+	service, err := retrieveService(targetDir, logger)
+	if err != nil {
+		return nil, err
+	}
 	dockerImages, err := RunDocker(targetDir, featureName, repo.Name, logger)
 	if err != nil {
 		return nil, err
 	}
 	return &Response{
 		Deployment:  deployment,
-		feature:     featureName,
-		projectName: repo.Name,
+		Feature:     featureName,
+		ProjectName: repo.Name,
 		Images:      dockerImages,
+		Service:     service,
 	}, nil
 }
